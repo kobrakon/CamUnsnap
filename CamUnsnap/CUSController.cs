@@ -33,35 +33,16 @@ namespace CamUnSnap
                 return;
             }
 
-            var player = GameObject.Find("PlayerSuperior(Clone)");
-            
-            if (player == null)
-            {
-                PreloaderUI.Instance.Console.AddLog("Couldn't get PlayerSuperior object", "DEBUG");
-                return;
-            }
-
-            var cam = player.GetComponent<PlayerCameraController>();
-            
-            if (cam == null)
-            {
-                PreloaderUI.Instance.Console.AddLog("Couldn't get PlayerCameraController component", "DEBUG");
-                return;
-            }
-
             if (isSnapped)
             {
-                cam.enabled = false;
-
+                gameWorld.AllPlayers[0].PointOfView = EPointOfView.FreeCamera;
                 gameWorld.AllPlayers[0].PointOfView = EPointOfView.ThirdPerson;
 
                 isSnapped = false;
                 return;
             }
 
-            cam.enabled = true;
-
-            gameWorld.AllPlayers[0].PointOfView = EPointOfView.ThirdPerson;
+            gameWorld.AllPlayers[0].PointOfView = EPointOfView.FirstPerson;
 
             isSnapped = true;
             return;            
