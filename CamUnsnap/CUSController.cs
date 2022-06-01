@@ -44,7 +44,7 @@ namespace CamUnSnap
 
             GameObject.Find("PlayerSuperior(Clone)").GetComponent<PlayerCameraController>().enabled = true;
 
-            gameWorld.AllPlayers[0].PointOfView = EPointOfView.ThirdPerson;
+            gameWorld.AllPlayers[0].PointOfView = EPointOfView.FirstPerson;
 
             isSnapped = true;
             return;            
