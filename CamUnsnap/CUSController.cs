@@ -2,7 +2,6 @@ using UnityEngine;
 using Comfort.Common;
 using EFT;
 using EFT.UI;
-using EFT.CameraControl;
 
 namespace CamUnSnap 
 { 
@@ -30,6 +29,8 @@ namespace CamUnSnap
 
                     return;
                 }
+                PreloaderUI.Instance.Console.AddLog("You must be in-raid before you can unsnap the camera.", "WARNING");
+
                 return;
             }
 
