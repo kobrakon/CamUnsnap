@@ -2,12 +2,14 @@ using UnityEngine;
 using System.Collections;
 using Comfort.Common;
 using EFT;
+using EFT.UI;
 using EFT.CameraControl;
 
 namespace CamUnSnap 
 { 
     public class CUSController : MonoBehaviour
     {
+        private static ILogger logger = Debug.unityLogger;
         public static bool isSnapped = true;
         public void Update()
         {
@@ -31,10 +33,26 @@ namespace CamUnSnap
                 }
                 return;
             }
+
+            var player = GameObject.Find("PlayerSuperior(Clone)");
             
+            if (player == null)
+            {
+                PreloaderUI.Instance.Console.SendMessage($"Couldn't get PlayerSuperior object");
+                return;
+            }
+
+            var cam = player.GetComponent<EFT.CameraControl.PlayerCameraController>();
+            
+            if (cam == null)
+            {
+                PreloaderUI.Instance.Console.AddLog("PlayerCameraController NULL", "DEBUG");
+                return;
+            }
+
             if (isSnapped)
             {
-                GameObject.Find("PlayerSuperior(Clone)").GetComponent<EFT.CameraControl.PlayerCameraController>().enabled = false;
+                cam.enabled = false;
 
                 gameWorld.AllPlayers[0].PointOfView = EPointOfView.ThirdPerson;
 
@@ -42,9 +60,9 @@ namespace CamUnSnap
                 return;
             }
 
-            GameObject.Find("PlayerSuperior(Clone)").GetComponent<PlayerCameraController>().enabled = true;
+            cam.enabled = true;
 
-            gameWorld.AllPlayers[0].PointOfView = EPointOfView.FirstPerson;
+            gameWorld.AllPlayers[0].PointOfView = EPointOfView.ThirdPerson;
 
             isSnapped = true;
             return;            
