@@ -1,5 +1,4 @@
 using UnityEngine;
-using System.Collections;
 using Comfort.Common;
 using EFT;
 using EFT.UI;
@@ -38,15 +37,15 @@ namespace CamUnSnap
             
             if (player == null)
             {
-                PreloaderUI.Instance.Console.SendMessage($"Couldn't get PlayerSuperior object");
+                PreloaderUI.Instance.Console.AddLog("Couldn't get PlayerSuperior object", "DEBUG");
                 return;
             }
 
-            var cam = player.GetComponent<EFT.CameraControl.PlayerCameraController>();
+            var cam = player.GetComponent<PlayerCameraController>();
             
             if (cam == null)
             {
-                PreloaderUI.Instance.Console.AddLog("PlayerCameraController NULL", "DEBUG");
+                PreloaderUI.Instance.Console.AddLog("Couldn't get PlayerCameraController component", "DEBUG");
                 return;
             }
 
