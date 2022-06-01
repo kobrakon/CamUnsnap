@@ -1,53 +1,44 @@
 using UnityEngine;
-using System.Collections;
 using Comfort.Common;
 using EFT;
-using EFT.CameraControl;
+using EFT.UI;
 
-namespace CamUnSnap 
-{ 
+namespace CamUnSnap
+{
     public class CUSController : MonoBehaviour
     {
-        public static bool isSnapped = true;
+        private static bool isSnapped { get; set; } = false;
+
         public void Update()
         {
             if (Plugin.ToggleCameraSnap.Value.IsDown())
-            {
                 SnapCam();
-            }
+
         }
 
         private static void SnapCam()
         {
             var gameWorld = Singleton<GameWorld>.Instance;
-            
+
             if (gameWorld == null || gameWorld.AllPlayers == null)
             {
-                if (!isSnapped)
-                {
-                    isSnapped = true;
+                if (isSnapped) isSnapped = !isSnapped;
+                PreloaderUI.Instance.Console.AddLog("You must be in-raid before you can unsnap the camera.", "WARNING");
 
-                    return;
-                }
                 return;
             }
-            
-            if (isSnapped)
+
+            if (!isSnapped)
             {
-                GameObject.Find("PlayerSuperior(Clone)").GetComponent<EFT.CameraControl.PlayerCameraController>().enabled = false;
-
+                gameWorld.AllPlayers[0].PointOfView = EPointOfView.FreeCamera;
                 gameWorld.AllPlayers[0].PointOfView = EPointOfView.ThirdPerson;
-
-                isSnapped = false;
-                return;
             }
+            else
+                gameWorld.AllPlayers[0].PointOfView = EPointOfView.FirstPerson;
 
-            GameObject.Find("PlayerSuperior(Clone)").GetComponent<PlayerCameraController>().enabled = true;
+            isSnapped = !isSnapped;
 
-            gameWorld.AllPlayers[0].PointOfView = EPointOfView.ThirdPerson;
-
-            isSnapped = true;
-            return;            
+            return;
         }
     }
 }
