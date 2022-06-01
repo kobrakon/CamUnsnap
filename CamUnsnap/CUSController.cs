@@ -3,50 +3,42 @@ using Comfort.Common;
 using EFT;
 using EFT.UI;
 
-namespace CamUnSnap 
-{ 
+namespace CamUnSnap
+{
     public class CUSController : MonoBehaviour
     {
-        private static ILogger logger = Debug.unityLogger;
-        public static bool isSnapped = true;
+        private static bool isSnapped { get; set; } = false;
+
         public void Update()
         {
             if (Plugin.ToggleCameraSnap.Value.IsDown())
-            {
                 SnapCam();
-            }
+
         }
 
         private static void SnapCam()
         {
             var gameWorld = Singleton<GameWorld>.Instance;
-            
+
             if (gameWorld == null || gameWorld.AllPlayers == null)
             {
-                if (!isSnapped)
-                {
-                    isSnapped = true;
-
-                    return;
-                }
+                if (isSnapped) isSnapped = !isSnapped;
                 PreloaderUI.Instance.Console.AddLog("You must be in-raid before you can unsnap the camera.", "WARNING");
 
                 return;
             }
 
-            if (isSnapped)
+            if (!isSnapped)
             {
                 gameWorld.AllPlayers[0].PointOfView = EPointOfView.FreeCamera;
                 gameWorld.AllPlayers[0].PointOfView = EPointOfView.ThirdPerson;
-
-                isSnapped = false;
-                return;
             }
+            else
+                gameWorld.AllPlayers[0].PointOfView = EPointOfView.FirstPerson;
 
-            gameWorld.AllPlayers[0].PointOfView = EPointOfView.FirstPerson;
+            isSnapped = !isSnapped;
 
-            isSnapped = true;
-            return;            
+            return;
         }
     }
 }
