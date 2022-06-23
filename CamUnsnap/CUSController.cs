@@ -23,8 +23,6 @@ namespace CamUnSnap
             if (gameWorld == null || gameWorld.AllPlayers == null)
             {
                 if (isSnapped) isSnapped = !isSnapped;
-                PreloaderUI.Instance.Console.AddLog("You must be in-raid before you can unsnap the camera.", "WARNING");
-
                 return;
             }
 
