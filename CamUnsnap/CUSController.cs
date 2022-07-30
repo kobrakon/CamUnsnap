@@ -9,6 +9,7 @@ namespace CamUnSnap
     {
         public static bool isSnapped { get; set; } = false;
         public static bool CamViewInControl { get; set; } = false;
+        public static bool GamespeedChanged { get; set; } = false;
         public static float MovementSpeed;
         public static GameObject gameCamera;
         public void Update()
@@ -20,7 +21,7 @@ namespace CamUnSnap
 
             if (Plugin.CameraMouse.Value.IsDown())
             {
-                switch (CamViewInControl)
+                switch (CamViewInControl) // sick ass switch statements
                 {
                     case true:
                         CamViewInControl = false;
@@ -31,41 +32,56 @@ namespace CamUnSnap
                 }
             }
 
+            if (Plugin.ChangeGamespeed.Value.IsDown())
+            {
+                switch (GamespeedChanged)
+                {
+                    case false:
+                        Time.timeScale = Plugin.Gamespeed.Value;
+                        GamespeedChanged = true;
+                        break;
+                    case true:
+                        Time.timeScale = 1;
+                        GamespeedChanged = false;
+                        break;
+                }
+            }
+
             if (isSnapped && Ready())
             {
                 gameCamera = GameObject.Find("FPS Camera");
 
-                if (Input.GetKey(KeyCode.LeftArrow)) //basic movement controls, might rework to be Bep configurable
+                if (Input.GetKey(Plugin.CamLeft.Value.MainKey))
                 {
-                    gameCamera.transform.position += (-gameCamera.transform.right * MovementSpeed * Time.deltaTime);
+                    gameCamera.transform.position += (-gameCamera.transform.right * MovementSpeed * ApplicableTimeDelta());
                 }
 
-                if (Input.GetKey(KeyCode.RightArrow))
+                if (Input.GetKey(Plugin.CamRight.Value.MainKey))
                 {
-                    gameCamera.transform.position += (gameCamera.transform.right * MovementSpeed * Time.deltaTime);
+                    gameCamera.transform.position += (gameCamera.transform.right * MovementSpeed * ApplicableTimeDelta());
                 }
 
-                if (Input.GetKey(KeyCode.UpArrow))
+                if (Input.GetKey(Plugin.CamForward.Value.MainKey))
                 {
-                    gameCamera.transform.position += (gameCamera.transform.forward * MovementSpeed * Time.deltaTime);
+                    gameCamera.transform.position += (gameCamera.transform.forward * MovementSpeed * ApplicableTimeDelta());
                 }
 
-                if (Input.GetKey(KeyCode.DownArrow))
+                if (Input.GetKey(Plugin.CamBack.Value.MainKey))
                 {
-                    gameCamera.transform.position += (-gameCamera.transform.forward * MovementSpeed * Time.deltaTime);
+                    gameCamera.transform.position += (-gameCamera.transform.forward * MovementSpeed * ApplicableTimeDelta());
                 }
 
-                if (Input.GetKey(KeyCode.Space))
+                if (Input.GetKey(Plugin.CamUp.Value.MainKey))
                 {
-                    gameCamera.transform.position += (gameCamera.transform.up * MovementSpeed * Time.deltaTime);
+                    gameCamera.transform.position += (gameCamera.transform.up * MovementSpeed * ApplicableTimeDelta());
                 }
 
-                if (Input.GetKey(KeyCode.LeftControl))
+                if (Input.GetKey(Plugin.CamDown.Value.MainKey))
                 {
-                    gameCamera.transform.position += (-gameCamera.transform.up * MovementSpeed * Time.deltaTime);
+                    gameCamera.transform.position += (-gameCamera.transform.up * MovementSpeed * ApplicableTimeDelta());
                 }
 
-                if (CamViewInControl) //logic for slaving the camera viewport to your mouse
+                if (CamViewInControl)
                 {
                     float newRotationX = gameCamera.transform.localEulerAngles.y + Input.GetAxis("Mouse X") * Plugin.CameraSensitivity.Value;
                     float newRotationY = gameCamera.transform.localEulerAngles.x - Input.GetAxis("Mouse Y") * Plugin.CameraSensitivity.Value;
@@ -74,6 +90,8 @@ namespace CamUnSnap
                 
             }
         }
+
+        private static float ApplicableTimeDelta() => !GamespeedChanged ? Time.deltaTime : Time.fixedDeltaTime;
 
         private static void SnapCam()
         {
