@@ -67,8 +67,8 @@ namespace CamUnSnap
 
                 if (CamViewInControl)
                 {
-                    float newRotationX = gameCamera.transform.localEulerAngles.y + Input.GetAxis("Mouse X");
-                    float newRotationY = gameCamera.transform.localEulerAngles.x - Input.GetAxis("Mouse Y");
+                    float newRotationX = gameCamera.transform.localEulerAngles.y + Input.GetAxis("Mouse X") * Plugin.CameraSensitivity.Value;
+                    float newRotationY = gameCamera.transform.localEulerAngles.x - Input.GetAxis("Mouse Y") * Plugin.CameraSensitivity.Value;
                     gameCamera.transform.localEulerAngles = new Vector3(newRotationY, newRotationX, 0f);
                 }
                 
