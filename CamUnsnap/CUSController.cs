@@ -35,7 +35,7 @@ namespace CamUnSnap
             {
                 gameCamera = GameObject.Find("FPS Camera");
 
-                if (Input.GetKey(KeyCode.LeftArrow))
+                if (Input.GetKey(KeyCode.LeftArrow)) //basic movement controls, might rework to be Bep configurable
                 {
                     gameCamera.transform.position += (-gameCamera.transform.right * MovementSpeed * Time.deltaTime);
                 }
@@ -65,7 +65,7 @@ namespace CamUnSnap
                     gameCamera.transform.position += (-gameCamera.transform.up * MovementSpeed * Time.deltaTime);
                 }
 
-                if (CamViewInControl)
+                if (CamViewInControl) //logic for slaving the camera viewport to your mouse
                 {
                     float newRotationX = gameCamera.transform.localEulerAngles.y + Input.GetAxis("Mouse X") * Plugin.CameraSensitivity.Value;
                     float newRotationY = gameCamera.transform.localEulerAngles.x - Input.GetAxis("Mouse Y") * Plugin.CameraSensitivity.Value;
