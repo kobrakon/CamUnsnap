@@ -9,9 +9,12 @@ namespace CamUnSnap
     {
         public static bool isSnapped { get; set; } = false;
         public static bool CamViewInControl { get; set; } = false;
+        public static float MovementSpeed;
         public static GameObject gameCamera;
         public void Update()
         {
+            MovementSpeed = Plugin.CameraMoveSpeed.Value;
+
             if (Plugin.ToggleCameraSnap.Value.IsDown())
                 SnapCam();
 
@@ -34,32 +37,32 @@ namespace CamUnSnap
 
                 if (Input.GetKey(KeyCode.LeftArrow))
                 {
-                    gameCamera.transform.position += (-gameCamera.transform.right * Time.deltaTime);
+                    gameCamera.transform.position += (-gameCamera.transform.right * MovementSpeed * Time.deltaTime);
                 }
 
                 if (Input.GetKey(KeyCode.RightArrow))
                 {
-                    gameCamera.transform.position += (gameCamera.transform.right * Time.deltaTime);
+                    gameCamera.transform.position += (gameCamera.transform.right * MovementSpeed * Time.deltaTime);
                 }
 
                 if (Input.GetKey(KeyCode.UpArrow))
                 {
-                    gameCamera.transform.position += (gameCamera.transform.forward * Time.deltaTime);
+                    gameCamera.transform.position += (gameCamera.transform.forward * MovementSpeed * Time.deltaTime);
                 }
 
                 if (Input.GetKey(KeyCode.DownArrow))
                 {
-                    gameCamera.transform.position += (-gameCamera.transform.forward * Time.deltaTime);
+                    gameCamera.transform.position += (-gameCamera.transform.forward * MovementSpeed * Time.deltaTime);
                 }
 
                 if (Input.GetKey(KeyCode.Space))
                 {
-                    gameCamera.transform.position += (gameCamera.transform.up * Time.deltaTime);
+                    gameCamera.transform.position += (gameCamera.transform.up * MovementSpeed * Time.deltaTime);
                 }
 
                 if (Input.GetKey(KeyCode.LeftControl))
                 {
-                    gameCamera.transform.position += (-gameCamera.transform.up * Time.deltaTime);
+                    gameCamera.transform.position += (-gameCamera.transform.up * MovementSpeed * Time.deltaTime);
                 }
 
                 if (CamViewInControl)
