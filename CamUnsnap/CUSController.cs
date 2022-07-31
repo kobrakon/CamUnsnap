@@ -7,7 +7,7 @@ namespace CamUnSnap
 {
     public class CUSController : MonoBehaviour
     {
-        public static bool isSnapped { get; set; } = false;
+        public static bool CamUnsnapped { get; set; } = false;
         public static bool CamViewInControl { get; set; } = false;
         public static bool GamespeedChanged { get; set; } = false;
         public static float MovementSpeed;
@@ -32,7 +32,7 @@ namespace CamUnSnap
                 }
             }
 
-            if (Plugin.ChangeGamespeed.Value.IsDown())
+            if (Plugin.ChangeGamespeed.Value.IsDown() && CamUnsnapped)
             {
                 switch (GamespeedChanged)
                 {
@@ -41,13 +41,14 @@ namespace CamUnSnap
                         GamespeedChanged = true;
                         break;
                     case true:
-                        Time.timeScale = 1;
+                        Time.timeScale = 1f;
                         GamespeedChanged = false;
                         break;
                 }
             }
+            else if (!CamUnsnapped) Time.timeScale = 1f;
 
-            if (isSnapped && Ready())
+            if (CamUnsnapped && Ready())
             {
                 gameCamera = GameObject.Find("FPS Camera");
 
@@ -99,11 +100,11 @@ namespace CamUnSnap
 
             if (gameWorld == null || gameWorld.AllPlayers == null)
             {
-                if (isSnapped) isSnapped = !isSnapped;
+                if (CamUnsnapped) CamUnsnapped = !CamUnsnapped;
                 return;
             }
 
-            if (!isSnapped)
+            if (!CamUnsnapped)
             {
                 gameWorld.AllPlayers[0].PointOfView = EPointOfView.FreeCamera;
                 gameWorld.AllPlayers[0].PointOfView = EPointOfView.ThirdPerson;
@@ -111,7 +112,7 @@ namespace CamUnSnap
             else
                 gameWorld.AllPlayers[0].PointOfView = EPointOfView.FirstPerson;
 
-            isSnapped = !isSnapped;
+            CamUnsnapped = !CamUnsnapped;
 
             return;
         }
