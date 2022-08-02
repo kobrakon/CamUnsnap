@@ -52,36 +52,36 @@ namespace CamUnSnap
             {
                 gameCamera = GameObject.Find("FPS Camera");
 
-                float Delta = !GamespeedChanged ? Time.deltaTime : Time.fixedDeltaTime;
+                float delta = !GamespeedChanged ? Time.deltaTime : Time.fixedDeltaTime;
 
                 if (Input.GetKey(Plugin.CamLeft.Value.MainKey))
                 {
-                    gameCamera.transform.position += (-gameCamera.transform.right * MovementSpeed * Delta);
+                    gameCamera.transform.position += (-gameCamera.transform.right * MovementSpeed * delta);
                 }
 
                 if (Input.GetKey(Plugin.CamRight.Value.MainKey))
                 {
-                    gameCamera.transform.position += (gameCamera.transform.right * MovementSpeed * Delta);
+                    gameCamera.transform.position += (gameCamera.transform.right * MovementSpeed * delta);
                 }
 
                 if (Input.GetKey(Plugin.CamForward.Value.MainKey))
                 {
-                    gameCamera.transform.position += (gameCamera.transform.forward * MovementSpeed * Delta);
+                    gameCamera.transform.position += (gameCamera.transform.forward * MovementSpeed * delta);
                 }
 
                 if (Input.GetKey(Plugin.CamBack.Value.MainKey))
                 {
-                    gameCamera.transform.position += (-gameCamera.transform.forward * MovementSpeed * Delta);
+                    gameCamera.transform.position += (-gameCamera.transform.forward * MovementSpeed * delta);
                 }
 
                 if (Input.GetKey(Plugin.CamUp.Value.MainKey))
                 {
-                    gameCamera.transform.position += (gameCamera.transform.up * MovementSpeed * Delta);
+                    gameCamera.transform.position += (gameCamera.transform.up * MovementSpeed * delta);
                 }
 
                 if (Input.GetKey(Plugin.CamDown.Value.MainKey))
                 {
-                    gameCamera.transform.position += (-gameCamera.transform.up * MovementSpeed * Delta);
+                    gameCamera.transform.position += (-gameCamera.transform.up * MovementSpeed * delta);
                 }
 
                 if (CamViewInControl)
