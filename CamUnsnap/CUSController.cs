@@ -52,34 +52,36 @@ namespace CamUnSnap
             {
                 gameCamera = GameObject.Find("FPS Camera");
 
+                float Delta = !GamespeedChanged ? Time.deltaTime : Time.fixedDeltaTime;
+
                 if (Input.GetKey(Plugin.CamLeft.Value.MainKey))
                 {
-                    gameCamera.transform.position += (-gameCamera.transform.right * MovementSpeed * ApplicableTimeDelta());
+                    gameCamera.transform.position += (-gameCamera.transform.right * MovementSpeed * Delta);
                 }
 
                 if (Input.GetKey(Plugin.CamRight.Value.MainKey))
                 {
-                    gameCamera.transform.position += (gameCamera.transform.right * MovementSpeed * ApplicableTimeDelta());
+                    gameCamera.transform.position += (gameCamera.transform.right * MovementSpeed * Delta);
                 }
 
                 if (Input.GetKey(Plugin.CamForward.Value.MainKey))
                 {
-                    gameCamera.transform.position += (gameCamera.transform.forward * MovementSpeed * ApplicableTimeDelta());
+                    gameCamera.transform.position += (gameCamera.transform.forward * MovementSpeed * Delta);
                 }
 
                 if (Input.GetKey(Plugin.CamBack.Value.MainKey))
                 {
-                    gameCamera.transform.position += (-gameCamera.transform.forward * MovementSpeed * ApplicableTimeDelta());
+                    gameCamera.transform.position += (-gameCamera.transform.forward * MovementSpeed * Delta);
                 }
 
                 if (Input.GetKey(Plugin.CamUp.Value.MainKey))
                 {
-                    gameCamera.transform.position += (gameCamera.transform.up * MovementSpeed * ApplicableTimeDelta());
+                    gameCamera.transform.position += (gameCamera.transform.up * MovementSpeed * Delta);
                 }
 
                 if (Input.GetKey(Plugin.CamDown.Value.MainKey))
                 {
-                    gameCamera.transform.position += (-gameCamera.transform.up * MovementSpeed * ApplicableTimeDelta());
+                    gameCamera.transform.position += (-gameCamera.transform.up * MovementSpeed * Delta);
                 }
 
                 if (CamViewInControl)
@@ -91,8 +93,6 @@ namespace CamUnSnap
                 
             }
         }
-
-        private static float ApplicableTimeDelta() => !GamespeedChanged ? Time.deltaTime : Time.fixedDeltaTime;
 
         private static void SnapCam()
         {
