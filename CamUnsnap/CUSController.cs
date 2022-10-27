@@ -1,34 +1,40 @@
-using UnityEngine;
-using Comfort.Common;
 using EFT;
-using EFT.UI;
+using System;
+using UnityEngine;
+using System.Linq;
+using Comfort.Common;
+using System.Reflection;
+using MonoMod.RuntimeDetour;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
-namespace CamUnSnap
+namespace CamUnsnap
 {
     public class CUSController : MonoBehaviour
     {
-        public static bool CamUnsnapped { get; set; } = false;
-        public static bool CamViewInControl { get; set; } = false;
-        public static bool GamespeedChanged { get; set; } = false;
-        public static float MovementSpeed;
-        public static GameObject gameCamera;
-        public void Update()
-        {
-            MovementSpeed = Plugin.CameraMoveSpeed.Value;
+        bool CamUnsnapped { get; set; } = false;
+        bool CamViewInControl { get; set; } = false;
+        bool GamespeedChanged { get; set; } = false;
+        GameObject gameCamera;
+        Vector3 MemoryPos;
+        List<Detour> Detours = new List<Detour>();
 
+        void Update()
+        {
             if (Plugin.ToggleCameraSnap.Value.IsDown())
                 SnapCam();
 
             if (Plugin.CameraMouse.Value.IsDown())
             {
-                switch (CamViewInControl) // sick ass switch statements
+                switch (CamViewInControl)
                 {
                     case true:
                         CamViewInControl = false;
-                        break;
+                    break;
                     case false:
                         CamViewInControl = true;
-                        break;
+                    break;
                 }
             }
 
@@ -39,11 +45,11 @@ namespace CamUnSnap
                     case false:
                         Time.timeScale = Plugin.Gamespeed.Value;
                         GamespeedChanged = true;
-                        break;
+                    break;
                     case true:
                         Time.timeScale = 1f;
                         GamespeedChanged = false;
-                        break;
+                    break;
                 }
             }
             else if (!CamUnsnapped) Time.timeScale = 1f;
@@ -52,80 +58,98 @@ namespace CamUnSnap
             {
                 gameCamera = GameObject.Find("FPS Camera");
 
+                if (Input.GetKey(Plugin.GoToPos.Value.MainKey))
+                {
+                    if (MemoryPos == null)
+                    {
+                        Plugin.logger.LogError("No memory pos to move camera to.");
+                        return;
+                    }
+                    gameCamera.transform.position = MemoryPos;
+                }
+
+                if (Plugin.ImmuneInCamera.Value) typeof(GClass1905).GetProperty("DamageCoeff", BindingFlags.Instance | BindingFlags.Public).SetValue(player.ActiveHealthController, 0f);
+                else if (player.ActiveHealthController.DamageCoeff != 1f)
+                    typeof(GClass1905).GetProperty("DamageCoeff", BindingFlags.Instance | BindingFlags.Public).SetValue(player.ActiveHealthController, 1f);
+
+                if (Input.GetKey(Plugin.RememberPos.Value.MainKey)) MemoryPos = gameCamera.transform.position;
+                if (Input.GetKey(Plugin.MovePlayerToCam.Value.MainKey)) MovePlayer();
+                if (Input.GetKey(Plugin.LockPlayerMovement.Value.MainKey))
+                {
+                    if (!Detours.Any()) Detours = new List<Detour>() { new Detour(typeof(Player).GetMethod("Move"), typeof(CUSController).GetMethod(nameof(BlankOverride))), new Detour(typeof(Player).GetMethod("Rotate"), typeof(CUSController).GetMethod(nameof(BlankOverride))) };
+                    else { Detours.ForEach((Detour det) => det.Dispose()); Detours.Clear(); };
+                }
+
                 float delta = !GamespeedChanged ? Time.deltaTime : Time.fixedDeltaTime;
 
                 if (Input.GetKey(Plugin.CamLeft.Value.MainKey))
-                {
                     gameCamera.transform.position += (-gameCamera.transform.right * MovementSpeed * delta);
-                }
 
                 if (Input.GetKey(Plugin.CamRight.Value.MainKey))
-                {
                     gameCamera.transform.position += (gameCamera.transform.right * MovementSpeed * delta);
-                }
 
                 if (Input.GetKey(Plugin.CamForward.Value.MainKey))
-                {
                     gameCamera.transform.position += (gameCamera.transform.forward * MovementSpeed * delta);
-                }
 
                 if (Input.GetKey(Plugin.CamBack.Value.MainKey))
-                {
                     gameCamera.transform.position += (-gameCamera.transform.forward * MovementSpeed * delta);
-                }
 
                 if (Input.GetKey(Plugin.CamUp.Value.MainKey))
-                {
                     gameCamera.transform.position += (gameCamera.transform.up * MovementSpeed * delta);
-                }
 
                 if (Input.GetKey(Plugin.CamDown.Value.MainKey))
-                {
                     gameCamera.transform.position += (-gameCamera.transform.up * MovementSpeed * delta);
-                }
 
                 if (CamViewInControl)
                 {
-                    float newRotationX = gameCamera.transform.localEulerAngles.y + Input.GetAxis("Mouse X") * Plugin.CameraSensitivity.Value;
-                    float newRotationY = gameCamera.transform.localEulerAngles.x - Input.GetAxis("Mouse Y") * Plugin.CameraSensitivity.Value;
+                    float newRotationX = gameCamera.transform.localEulerAngles.y + Input.GetAxis("Mouse X") * CameraSensitivity;
+                    float newRotationY = gameCamera.transform.localEulerAngles.x - Input.GetAxis("Mouse Y") * CameraSensitivity;
                     gameCamera.transform.localEulerAngles = new Vector3(newRotationY, newRotationX, 0f);
                 }
-                
-            }
+            } else if (CamUnsnapped && !Ready() && Detours.Any()) { Detours.ForEach((Detour det) => det.Dispose()); Detours.Clear(); }
         }
 
-        private static void SnapCam()
+        async void MovePlayer()
         {
-            var gameWorld = Singleton<GameWorld>.Instance;
-
-            if (gameWorld == null || gameWorld.AllPlayers == null)
+            player.Transform.position = gameCamera.transform.position;
+            player.ActiveHealthController.FallSafeHeight = 99999f;
+            while (player.CharacterControllerCommon.isGrounded == false)
             {
-                if (CamUnsnapped) CamUnsnapped = !CamUnsnapped;
-                return;
+                await Task.Yield();
             }
+            player.ActiveHealthController.FallSafeHeight = Singleton<GClass1168>.Instance.Health.Falling.SafeHeight;
+        }
+
+        void SnapCam()
+        {
+            if (!Ready()) return;
 
             if (!CamUnsnapped)
             {
-                gameWorld.AllPlayers[0].PointOfView = EPointOfView.FreeCamera;
-                gameWorld.AllPlayers[0].PointOfView = EPointOfView.ThirdPerson;
+                player.PointOfView = EPointOfView.FreeCamera;
+                player.PointOfView = EPointOfView.ThirdPerson;
             }
             else
-                gameWorld.AllPlayers[0].PointOfView = EPointOfView.FirstPerson;
+                player.PointOfView = EPointOfView.FirstPerson;
 
             CamUnsnapped = !CamUnsnapped;
-
             return;
         }
 
-        private static bool Ready()
-        {
-            var gameWorld = Singleton<GameWorld>.Instance;
+        public static void BlankOverride() {} // override so player doesn't move
 
-            if (gameWorld.AllPlayers == null || gameWorld.AllPlayers[0] == null)
-            {
-                return false;
-            }
-            return true;
-        }
+        Player player
+        { get { return gameWorld.AllPlayers[0]; } }
+
+        GameWorld gameWorld
+        { get { return Singleton<GameWorld>.Instance; } }
+
+        float MovementSpeed
+        { get { return Plugin.MovementSpeed.Value; } }
+
+        float CameraSensitivity
+        { get { return Plugin.CameraSensitivity.Value; } }
+
+        bool Ready() => gameWorld is null || gameWorld.AllPlayers is null || gameWorld.AllPlayers.Count == 0 ? false : true;
     }
 }
