@@ -135,6 +135,6 @@ namespace CamUnsnap
         float CameraSensitivity
         { get => Plugin.CameraSensitivity.Value; }
 
-        bool Ready() => gameWorld != null || gameWorld.AllPlayers != null || gameWorld.AllPlayers.Count > 0;
+        bool Ready() => gameWorld != null && gameWorld.AllPlayers != null && gameWorld.AllPlayers.Count > 0;
     }
 }
