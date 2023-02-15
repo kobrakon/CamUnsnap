@@ -14,7 +14,6 @@ namespace CamUnsnap
 {
     public class CUSController : MonoBehaviour
     {
-        bool CamViewInControl { get; set; } = false;
         bool mCamUnsnapped = false;
         GameObject gameCamera;
         Vector3 MemoryPos;
@@ -22,6 +21,97 @@ namespace CamUnsnap
         List<Vector3> MemoryPosList = new List<Vector3>();
         int currentListIndex = 0;
         float cacheFOV = 0;
+
+        bool CamViewInControl { get; set; } = false;
+
+        Player player
+        { get => gameWorld.AllPlayers[0]; }
+
+        GameWorld gameWorld
+        { get => Singleton<GameWorld>.Instance; }
+
+        float MovementSpeed
+        { get => Plugin.MovementSpeed.Value; }
+
+        float CameraSensitivity
+        { get => Plugin.CameraSensitivity.Value; }
+
+        GameObject commonUI
+        { get => MonoBehaviourSingleton<CommonUI>.Instance.gameObject; }
+
+        GameObject preloaderUI
+        { get => MonoBehaviourSingleton<PreloaderUI>.Instance.gameObject; }
+
+        GameObject gameScene
+        { get => MonoBehaviourSingleton<GameUI>.Instance.gameObject; }
+
+        bool GamespeedChanged
+        {
+            get => Time.timeScale != 1f;
+            set
+            {
+                Time.timeScale = value ? Plugin.Gamespeed.Value : 1f;
+            }
+        }
+
+        bool UIEnabled
+        {
+            get => commonUI.activeSelf && preloaderUI.activeSelf && gameScene.activeSelf;
+            set
+            {
+                commonUI.SetActive(value);
+                preloaderUI.SetActive(value);
+                gameScene.SetActive(value);
+            }
+        }
+
+        bool playerAirborne
+        {
+            get => !player.CharacterControllerCommon.isGrounded;
+        }
+
+        bool CamUnsnapped
+        {
+            get => mCamUnsnapped;
+            set
+            {
+                if (!value)
+                {
+                    if (!Plugin.OverrideGameRestriction.Value)
+                    {
+                        if (Ready())
+                        {
+                            player.PointOfView = EPointOfView.FirstPerson;
+                            if (Plugin.ImmuneInCamera.Value) typeof(ActiveHealthControllerClass).GetProperty("DamageCoeff", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(player.ActiveHealthController, new object[] { 1f });
+                        }
+                        if (Detours.Any()) Detours.ForEach((Detour det) => det.Dispose()); Detours.Clear();
+                        if (!UIEnabled)
+                        {
+                            try
+                            {
+                                commonUI.SetActive(true);
+                                preloaderUI.SetActive(true);
+                                gameScene.SetActive(true);
+                            }
+                            catch (Exception e) { Plugin.logger.LogError($"bruh\n{e}"); }
+                            UIEnabled = true;
+                        }
+                        Camera.current.fieldOfView = cacheFOV;
+                    }
+                } else
+                {
+                    if (player != null)
+                    {
+                        player.PointOfView = EPointOfView.FreeCamera;
+                        player.PointOfView = EPointOfView.ThirdPerson;
+                    }
+                    
+                    cacheFOV = Camera.current.fieldOfView;
+                    if (Plugin.OverrideGameRestriction.Value) SendWarn("Session Override is enabled, player and positioning options are ignored, and controlling the camera outside of a raid may cause issues.\nYou've been warned...");
+                }
+                mCamUnsnapped = value;
+            }
+        }
 
         void Update()
         {
@@ -37,7 +127,7 @@ namespace CamUnsnap
             if (CamUnsnapped)
             {
                 try
-                {   
+                {
                     gameCamera = Camera.current.gameObject;
 
                     if (!Plugin.OverrideGameRestriction.Value && Ready())
@@ -58,7 +148,8 @@ namespace CamUnsnap
 
                         typeof(ActiveHealthControllerClass)
                             .GetProperty("DamageCoeff", BindingFlags.Instance | BindingFlags.Public)
-                            .SetValue(player.ActiveHealthController, Plugin.ImmuneInCamera.Value ? 0f : player.ActiveHealthController.DamageCoeff != 1f && !playerAirborne ? 1f : 0f);
+                            .GetSetMethod(true)
+                            .Invoke(player.ActiveHealthController, new object[] { Plugin.ImmuneInCamera.Value ? 0f : player.ActiveHealthController.DamageCoeff != 1f && !playerAirborne ? 1f : 0f });
 
                         if (Input.GetKeyDown(Plugin.RememberPos.Value.MainKey)) 
                             MemoryPos = gameCamera.transform.position;
@@ -68,13 +159,12 @@ namespace CamUnsnap
                             if (!Detours.Any()) 
                                 Detours = new List<Detour>() 
                                 { 
-                                    new Detour((Action<Vector2>)player.Move, (Action)BlankOverride), 
-                                    new Detour((Action<Vector2, bool>)player.Rotate, (Action)BlankOverride), 
-                                    new Detour((Action<Vector2, bool>)player.Rotate, (Action)BlankOverride),
-                                    new Detour((Action<float>)player.SlowLean, (Action)BlankOverride),
-                                    new Detour((Action<float>)player.ChangePose, (Action)BlankOverride),
-                                    new Detour((Action)player.Jump, (Action)BlankOverride),
-                                    new Detour((Action)player.ToggleProne, (Action)BlankOverride)
+                                    new Detour(typeof(Player).GetMethod(nameof(Player.Move)).CreateDelegate(player), (Action)BlankOverride), 
+                                    new Detour(typeof(Player).GetMethod(nameof(Player.Rotate)).CreateDelegate(player), (Action)BlankOverride), 
+                                    new Detour(typeof(Player).GetMethod(nameof(Player.SlowLean)).CreateDelegate(player), (Action)BlankOverride),
+                                    new Detour(typeof(Player).GetMethod(nameof(Player.ChangePose)).CreateDelegate(player), (Action)BlankOverride),
+                                    new Detour(typeof(Player).GetMethod(nameof(Player.Jump)).CreateDelegate(player), (Action)BlankOverride),
+                                    new Detour(typeof(Player).GetMethod(nameof(Player.ToggleProne)).CreateDelegate(player), (Action)BlankOverride)
                                 };
                             else 
                             { 
@@ -161,99 +251,17 @@ namespace CamUnsnap
         async void MovePlayer()
         {
             player.Transform.position = gameCamera.transform.position;
-            typeof(ActiveHealthControllerClass).GetProperty("DamageCoeff", BindingFlags.Instance | BindingFlags.Public).SetValue(player.ActiveHealthController, 0f);
+            typeof(ActiveHealthControllerClass).GetProperty("DamageCoeff", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(player.ActiveHealthController, new object[] { 0f });
             while (playerAirborne)
             {
                 await Task.Yield();
             }
-            typeof(ActiveHealthControllerClass).GetProperty("DamageCoeff", BindingFlags.Instance | BindingFlags.Public).SetValue(player.ActiveHealthController, 1f);
+            typeof(ActiveHealthControllerClass).GetProperty("DamageCoeff", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(player.ActiveHealthController, new object[] { 1f });
         }
 
         void SendWarn(string message) => NotificationManagerClass.DisplayMessageNotification(message, ENotificationDurationType.Long, ENotificationIconType.Alert);
 
         public static void BlankOverride() {} // override so player doesn't move
-
-        Player player
-        { get => gameWorld.AllPlayers[0]; }
-
-        GameWorld gameWorld
-        { get => Singleton<GameWorld>.Instance; }
-
-        float MovementSpeed
-        { get => Plugin.MovementSpeed.Value; }
-
-        float CameraSensitivity
-        { get => Plugin.CameraSensitivity.Value; }
-
-        GameObject commonUI
-        { get => MonoBehaviourSingleton<CommonUI>.Instance.gameObject; }
-
-        GameObject preloaderUI
-        { get => MonoBehaviourSingleton<PreloaderUI>.Instance.gameObject; }
-
-        GameObject gameScene
-        { get => MonoBehaviourSingleton<GameUI>.Instance.gameObject; }
-
-        bool GamespeedChanged
-        {
-            get => Time.timeScale != 1f;
-            set
-            {
-                Time.timeScale = value ? 0f : 1f;
-            }
-        }
-
-        bool UIEnabled
-        {
-            get => commonUI.activeSelf && preloaderUI.activeSelf && gameScene.activeSelf;
-            set
-            {
-                commonUI.SetActive(value);
-                preloaderUI.SetActive(value);
-                gameScene.SetActive(value);
-            }
-        }
-
-        bool playerAirborne
-        {
-            get => !player.CharacterControllerCommon.isGrounded;
-        }
-
-        bool CamUnsnapped
-        {
-            get => mCamUnsnapped;
-            set
-            {
-                if (!value)
-                {
-                    if (!Plugin.OverrideGameRestriction.Value)
-                    {
-                        player.PointOfView = EPointOfView.FirstPerson;
-                        if (Detours.Any()) Detours.ForEach((Detour det) => det.Dispose()); Detours.Clear();
-                        if (Plugin.ImmuneInCamera.Value) typeof(ActiveHealthControllerClass).GetProperty("DamageCoeff", BindingFlags.Instance | BindingFlags.Public).SetValue(player.ActiveHealthController, 1f);
-                        if (!UIEnabled)
-                        {
-                            try
-                            {
-                                commonUI.SetActive(true);
-                                preloaderUI.SetActive(true);
-                                gameScene.SetActive(true);
-                            }
-                            catch (Exception e) { Plugin.logger.LogError($"bruh\n{e}"); }
-                            UIEnabled = true;
-                        }
-                        Camera.current.fieldOfView = cacheFOV;
-                    }
-                } else
-                {
-                    player.PointOfView = EPointOfView.FreeCamera;
-                    player.PointOfView = EPointOfView.ThirdPerson;
-                    cacheFOV = Camera.current.fieldOfView;
-                    if (Plugin.OverrideGameRestriction.Value) SendWarn("Session Override is enabled, player and positioning options are ignored, and controlling the camera outside of a raid may cause issues.\nYou've been warned...");
-                }
-                mCamUnsnapped = value;
-            }
-        }
 
         bool Ready() => gameWorld != null && gameWorld.AllPlayers != null && gameWorld.AllPlayers.Count > 0;
     }
