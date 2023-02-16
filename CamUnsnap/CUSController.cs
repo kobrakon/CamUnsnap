@@ -12,13 +12,75 @@ using System.Collections.Generic;
 
 namespace CamUnsnap
 {
+    // I love documentation
+    /// <summary>
+    /// Represents a stream of positions and angles captured from a parent GameObject
+    /// </summary>
+    public struct TransformRecording
+    {
+        /// <summary>
+        /// Creates a new transform recording stream
+        /// </summary>
+        /// <param name="Target">The GameObject to capture transform data from</param>
+        public TransformRecording(GameObject Target)
+        {
+            this.Target = Target;
+            Positions = new List<Vector3>();
+            Angles = new List<Vector3>();
+        }
+
+        /// <summary>
+        /// Captures and saves the position and angles of the target GameObject on the current frame
+        /// </summary>
+        public void Capture()
+        {
+            Positions.Add(Target.transform.position);
+            Angles.Add(Target.transform.localEulerAngles);
+        }
+
+        /// <summary>
+        /// Clears all recorded position and angle streams
+        /// </summary>
+        public void Clear()
+        {
+            Positions = new List<Vector3>();
+            Angles = new List<Vector3>();
+        }
+
+        /// <summary>
+        /// Checks if any values are present in the current streams
+        /// </summary>
+        /// <returns>true if there are any non-null values, false otherwise</returns>
+        public bool Any() => Positions.Any();
+
+        public Vector3[] this[int index]
+        {
+            get => new Vector3[] { Positions[index], Angles[index] };
+        }
+
+        public int Length
+        { get => Positions.Count - 1; }
+
+        public List<Vector3> Positions
+        { get; private set; }
+
+        public List<Vector3> Angles
+        { get; private set; }
+
+        public readonly GameObject Target;
+    }
+
     public class CUSController : MonoBehaviour
     {
         bool mCamUnsnapped = false;
+        bool Recording = false;
+        bool playingPath = false;
+        int currentRecordingIndex = 0;
         GameObject gameCamera;
         Vector3 MemoryPos;
         List<Detour> Detours = new List<Detour>();
         List<Vector3> MemoryPosList = new List<Vector3>();
+        TransformRecording PathRecording;
         int currentListIndex = 0;
         float cacheFOV = 0;
 
@@ -107,7 +169,7 @@ namespace CamUnsnap
                     }
                     
                     cacheFOV = Camera.current.fieldOfView;
-                    if (Plugin.OverrideGameRestriction.Value) SendWarn("Session Override is enabled, player and positioning options are ignored, and controlling the camera outside of a raid may cause issues.\nYou've been warned...");
+                    if (Plugin.OverrideGameRestriction.Value) SendNotificaiton("Session Override is enabled, player and positioning options are ignored, and controlling the camera outside of a raid may cause issues.\nYou've been warned...");
                 }
                 mCamUnsnapped = value;
             }
@@ -132,10 +194,15 @@ namespace CamUnsnap
 
                     if (!Plugin.OverrideGameRestriction.Value && Ready())
                     {
+                        if (PathRecording.Target == null)
+                        {
+                            PathRecording = new TransformRecording(gameCamera);
+                        }
+
                         if (Input.GetKeyDown(Plugin.GoToPos.Value.MainKey))
                         {
                             if (MemoryPos == null)
-                                SendWarn("No memory pos to move camera to.");
+                                SendNotificaiton("No memory pos to move camera to.");
                             else
                                 gameCamera.transform.position = MemoryPos;
                         }
@@ -143,8 +210,57 @@ namespace CamUnsnap
                         if (Input.GetKeyDown(Plugin.HideUI.Value.MainKey))
                             UIEnabled = !UIEnabled;
 
-                        if (Input.GetKeyDown(Plugin.MovePlayerToCam.Value.MainKey)) 
+                        if (Input.GetKeyDown(Plugin.PlayRecord.Value.MainKey))
+                            playingPath = true;
+
+                        if (Recording)
+                            PathRecording.Capture();
+
+                        if (playingPath)
+                        {
+                            Vector3[] transformFrame = PathRecording[currentRecordingIndex];
+                            gameCamera.transform.position = transformFrame[0];
+                            gameCamera.transform.localEulerAngles = transformFrame[1];
+
+                            currentRecordingIndex++;
+
+                            if (currentRecordingIndex > PathRecording.Length) // fuckers took my .Length cant have shit with VS
+                            {
+                                currentRecordingIndex = 0;
+                                playingPath = false;
+                                return;
+                            }
+
+                            return;
+                        }
+
+                        if (Input.GetKeyDown(Plugin.MovePlayerToCam.Value.MainKey))
                             MovePlayer();
+
+                        if (Input.GetKeyDown(Plugin.BeginRecord.Value.MainKey))
+                        {
+                            Recording = true;
+                            PathRecording.Clear();
+                            SendNotificaiton("Recording Started", false);
+                        }
+
+                        if (Input.GetKeyDown(Plugin.ResumeRecord.Value.MainKey))
+                        {
+                            if (PathRecording.Any())
+                            {
+                                Recording = true;
+                                SendNotificaiton("Recording Resumed", false);
+                            } else
+                            {
+                                SendNotificaiton($"Cannot resume recording\nNo previous recording exists, press '{Plugin.BeginRecord.Value}' to start a new one");
+                            }
+                        }
+
+                        if (Input.GetKeyDown(Plugin.StopRecord.Value.MainKey))
+                        {
+                            Recording = false;
+                            SendNotificaiton("Recording Stopped", false);
+                        }
 
                         typeof(ActiveHealthControllerClass)
                             .GetProperty("DamageCoeff", BindingFlags.Instance | BindingFlags.Public)
@@ -189,7 +305,7 @@ namespace CamUnsnap
                             } else
                             {
                                 currentListIndex = 0;
-                                SendWarn("No valid Vector3 in Memory Position List to move to.");
+                                SendNotificaiton("No valid Vector3 in Memory Position List to move to.");
                             }
                         }
 
@@ -241,7 +357,7 @@ namespace CamUnsnap
 
                 } catch (Exception e)
                 {
-                    SendWarn($"Camera machine broke =>\n{e.Message}");
+                    SendNotificaiton($"Camera machine broke =>\n{e.Message}");
                     Plugin.logger.LogError(e);
                     CamUnsnapped = false;
                 }
@@ -259,7 +375,7 @@ namespace CamUnsnap
             typeof(ActiveHealthControllerClass).GetProperty("DamageCoeff", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(player.ActiveHealthController, new object[] { 1f });
         }
 
-        void SendWarn(string message) => NotificationManagerClass.DisplayMessageNotification(message, ENotificationDurationType.Long, ENotificationIconType.Alert);
+        void SendNotificaiton(string message, bool warn = true) => NotificationManagerClass.DisplayMessageNotification(message, ENotificationDurationType.Long, warn ? ENotificationIconType.Alert : ENotificationIconType.Default);
 
         public static void BlankOverride() {} // override so player doesn't move
 
