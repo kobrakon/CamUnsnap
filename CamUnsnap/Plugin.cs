@@ -33,6 +33,10 @@ namespace CamUnsnap
         internal static ConfigEntry<KeyboardShortcut> AddToMemPosList;
         internal static ConfigEntry<KeyboardShortcut> AdvanceList;
         internal static ConfigEntry<KeyboardShortcut> ClearList;
+        internal static ConfigEntry<KeyboardShortcut> BeginRecord;
+        internal static ConfigEntry<KeyboardShortcut> ResumeRecord;
+        internal static ConfigEntry<KeyboardShortcut> StopRecord;
+        internal static ConfigEntry<KeyboardShortcut> PlayRecord;
         internal static ConfigEntry<float> Gamespeed;
         internal static ConfigEntry<float> MovementSpeed;
         internal static ConfigEntry<float> CameraSensitivity;
@@ -66,6 +70,10 @@ namespace CamUnsnap
             AddToMemPosList = Config.Bind(KeybindSectionName, "Add Position To Camera Memory Position List", new KeyboardShortcut(KeyCode.Plus), "Adds the current camera position into the Memory Position List");
             AdvanceList = Config.Bind(KeybindSectionName, "Advance Memory List Position", new KeyboardShortcut(KeyCode.Greater), "Changes the camera's position to the next position contained in the list");
             ClearList = Config.Bind(KeybindSectionName, "Clear Camera Memory Position List", new KeyboardShortcut(KeyCode.Less), "Empties the current Camera Memory Position List");
+            BeginRecord = Config.Bind(KeybindSectionName, "Begin Path Recording", new KeyboardShortcut(KeyCode.LeftBracket), "Begins recording camera movement");
+            ResumeRecord = Config.Bind(KeybindSectionName, "Continue Path Recording", new KeyboardShortcut(KeyCode.Backslash), "Resumes recording and appends it to the previous recording");
+            StopRecord = Config.Bind(KeybindSectionName, "End Path Recording", new KeyboardShortcut(KeyCode.RightBracket), "Ends and saves the currently recording camera path");
+            PlayRecord = Config.Bind(KeybindSectionName, "Play Path Recording", new KeyboardShortcut(KeyCode.Slash), "Plays the currently saved camera path recording");
             CameraFOV = Config.Bind(CameraSettingsSectionName, "Camera FOV", 75, new ConfigDescription("The FOV value of the camera while unsnaped", new AcceptableValueRange<int>(1, 200)));
             MovementSpeed = Config.Bind(CameraSettingsSectionName, "CameraMoveSpeed", 10f, new ConfigDescription("How fast you want the camera to move", new AcceptableValueRange<float>(0.01f, 100f)));
             CameraSensitivity = Config.Bind(CameraSettingsSectionName, "Camera Sensitivity", 10f, new ConfigDescription("How fast you want the camera viewport to move while slaved", new AcceptableValueRange<float>(0.0f, 100f)));
