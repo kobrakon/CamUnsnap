@@ -4,6 +4,7 @@ using System;
 using System.Linq;
 using UnityEngine;
 using Comfort.Common;
+using System.Numerics;
 using System.Reflection;
 using EFT.Communications;
 using MonoMod.RuntimeDetour;
@@ -97,6 +98,9 @@ namespace CamUnsnap
 
         float CameraSensitivity
         { get => Plugin.CameraSensitivity.Value; }
+        
+        float CameraSmoothing
+        { get => Plugin.CameraSmoothing.Value; }
 
         GameObject commonUI
         { get => MonoBehaviourSingleton<CommonUI>.Instance.gameObject; }
@@ -144,7 +148,7 @@ namespace CamUnsnap
                         if (Ready())
                         {
                             player.PointOfView = EPointOfView.FirstPerson;
-                            if (Plugin.ImmuneInCamera.Value) typeof(ActiveHealthControllerClass).GetProperty("DamageCoeff", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(player.ActiveHealthController, new object[] { 1f });
+                            if (Plugin.ImmuneInCamera.Value) player.ActiveHealthController.SetDamageCoeff(1);
                         }
                         if (Detours.Any()) Detours.ForEach((Detour det) => det.Dispose()); Detours.Clear();
                         if (!UIEnabled)
@@ -174,7 +178,8 @@ namespace CamUnsnap
                 mCamUnsnapped = value;
             }
         }
-
+        private Vector2 smoothedMouseDelta;
+        private Vector2 currentMouseDelta;
         void Update()
         {
             if (Input.GetKeyDown(Plugin.ToggleCameraSnap.Value.MainKey)) 
@@ -262,10 +267,7 @@ namespace CamUnsnap
                             SendNotificaiton("Recording Stopped", false);
                         }
 
-                        typeof(ActiveHealthControllerClass)
-                            .GetProperty("DamageCoeff", BindingFlags.Instance | BindingFlags.Public)
-                            .GetSetMethod(true)
-                            .Invoke(player.ActiveHealthController, new object[] { Plugin.ImmuneInCamera.Value ? 0f : player.ActiveHealthController.DamageCoeff != 1f && !playerAirborne ? 1f : 0f });
+                        player.ActiveHealthController.SetDamageCoeff(Plugin.ImmuneInCamera.Value ? 0f : player.ActiveHealthController.DamageCoeff != 1f && !playerAirborne ? 1f : 0f);
 
                         if (Input.GetKeyDown(Plugin.RememberPos.Value.MainKey)) 
                             MemoryPos = gameCamera.transform.position;
@@ -343,10 +345,17 @@ namespace CamUnsnap
 
                     if (CamViewInControl)
                     {
-                        float newRotationX = gameCamera.transform.localEulerAngles.y + Input.GetAxis("Mouse X") * CameraSensitivity;
-                        float newRotationY = gameCamera.transform.localEulerAngles.x - Input.GetAxis("Mouse Y") * CameraSensitivity;
+
+                        currentMouseDelta.x = Input.GetAxis("Mouse X") * CameraSensitivity;
+                        currentMouseDelta.y = Input.GetAxis("Mouse Y") * CameraSensitivity;
+
+                        smoothedMouseDelta = Vector2.Lerp(smoothedMouseDelta, currentMouseDelta, CameraSmoothing);
+
+                        float newRotationX = gameCamera.transform.localEulerAngles.y + smoothedMouseDelta.x;
+                        float newRotationY = gameCamera.transform.localEulerAngles.x - smoothedMouseDelta.y;
 
                         gameCamera.transform.localEulerAngles = new Vector3(newRotationY, newRotationX, 0f);
+
                     }
 
                     if (Input.GetKey(Plugin.RotateLeft.Value.MainKey))
@@ -367,12 +376,12 @@ namespace CamUnsnap
         async void MovePlayer()
         {
             player.Transform.position = gameCamera.transform.position;
-            typeof(ActiveHealthControllerClass).GetProperty("DamageCoeff", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(player.ActiveHealthController, new object[] { 0f });
+            player.ActiveHealthController.SetDamageCoeff(1);
             while (playerAirborne)
             {
                 await Task.Yield();
             }
-            typeof(ActiveHealthControllerClass).GetProperty("DamageCoeff", BindingFlags.Instance | BindingFlags.Public).GetSetMethod(true).Invoke(player.ActiveHealthController, new object[] { 1f });
+            player.ActiveHealthController.SetDamageCoeff(1);
         }
 
         void SendNotificaiton(string message, bool warn = true) => NotificationManagerClass.DisplayMessageNotification(message, ENotificationDurationType.Long, warn ? ENotificationIconType.Alert : ENotificationIconType.Default);
