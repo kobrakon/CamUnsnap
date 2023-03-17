@@ -9,6 +9,7 @@ using EFT.Communications;
 using MonoMod.RuntimeDetour;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Numerics;
 
 namespace CamUnsnap
 {
@@ -97,6 +98,9 @@ namespace CamUnsnap
 
         float CameraSensitivity
         { get => Plugin.CameraSensitivity.Value; }
+        
+        float CameraSmoothing
+        { get => Plugin.CameraSmoothing.Value; }
 
         GameObject commonUI
         { get => MonoBehaviourSingleton<CommonUI>.Instance.gameObject; }
@@ -174,7 +178,8 @@ namespace CamUnsnap
                 mCamUnsnapped = value;
             }
         }
-
+        private Vector2 smoothedMouseDelta;
+        private Vector2 currentMouseDelta;
         void Update()
         {
             if (Input.GetKeyDown(Plugin.ToggleCameraSnap.Value.MainKey)) 
@@ -343,10 +348,17 @@ namespace CamUnsnap
 
                     if (CamViewInControl)
                     {
-                        float newRotationX = gameCamera.transform.localEulerAngles.y + Input.GetAxis("Mouse X") * CameraSensitivity;
-                        float newRotationY = gameCamera.transform.localEulerAngles.x - Input.GetAxis("Mouse Y") * CameraSensitivity;
+
+                        currentMouseDelta.x = Input.GetAxis("Mouse X") * CameraSensitivity;
+                        currentMouseDelta.y = Input.GetAxis("Mouse Y") * CameraSensitivity;
+
+                        smoothedMouseDelta = Vector2.Lerp(smoothedMouseDelta, currentMouseDelta, CameraSmoothing);
+
+                        float newRotationX = gameCamera.transform.localEulerAngles.y + smoothedMouseDelta.x;
+                        float newRotationY = gameCamera.transform.localEulerAngles.x - smoothedMouseDelta.y;
 
                         gameCamera.transform.localEulerAngles = new Vector3(newRotationY, newRotationX, 0f);
+
                     }
 
                     if (Input.GetKey(Plugin.RotateLeft.Value.MainKey))

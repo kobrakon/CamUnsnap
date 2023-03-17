@@ -40,6 +40,7 @@ namespace CamUnsnap
         internal static ConfigEntry<float> Gamespeed;
         internal static ConfigEntry<float> MovementSpeed;
         internal static ConfigEntry<float> CameraSensitivity;
+        internal static ConfigEntry<float> CameraSmoothing;
         internal static ConfigEntry<float> FastMoveMult;
         internal static ConfigEntry<int> CameraFOV;
         internal static ConfigEntry<bool> ImmuneInCamera;
@@ -77,6 +78,7 @@ namespace CamUnsnap
             CameraFOV = Config.Bind(CameraSettingsSectionName, "Camera FOV", 75, new ConfigDescription("The FOV value of the camera while unsnaped", new AcceptableValueRange<int>(1, 200)));
             MovementSpeed = Config.Bind(CameraSettingsSectionName, "CameraMoveSpeed", 10f, new ConfigDescription("How fast you want the camera to move", new AcceptableValueRange<float>(0.01f, 100f)));
             CameraSensitivity = Config.Bind(CameraSettingsSectionName, "Camera Sensitivity", 10f, new ConfigDescription("How fast you want the camera viewport to move while slaved", new AcceptableValueRange<float>(0.0f, 100f)));
+            CameraSmoothing = Config.Bind(CameraSettingsSectionName, "Mouse Smoothing", 10f, new ConfigDescription("The amount of smoothing you want applied to the mouse in camera mode. (Lower is smoother)", new AcceptableValueRange<float>(0.0001f, 1f)));
             Gamespeed = Config.Bind(CameraSettingsSectionName, "Set Gamespeed", 1f, new ConfigDescription("What gamespeed you want to set the gameworld to when pressing the Change Gamespeed bind !WARNING! Changing the gamespeed for too long can cause weird (but temporary) side effects", new AcceptableValueRange<float>(0f, 1f)));
             FastMoveMult = Config.Bind(CameraSettingsSectionName, "Set Fast Movement Multiplier", 2f, new ConfigDescription("The value that the camera movement speed is multiplied by while the move fast key is held", new AcceptableValueRange<float>(0f, 100f)));
             RotateUsesSens = Config.Bind(CameraSettingsSectionName, "Rotation speed inherits Camera Sensitivity", false, "If true, the camera rotation speed is multiplied by the Camera Sensitivity value, otherwise, the camera is rotated by only 1 degree per frame");
