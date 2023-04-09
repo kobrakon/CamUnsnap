@@ -4,7 +4,6 @@ using System;
 using System.Linq;
 using UnityEngine;
 using Comfort.Common;
-using System.Numerics;
 using System.Reflection;
 using EFT.Communications;
 using MonoMod.RuntimeDetour;
@@ -78,6 +77,8 @@ namespace CamUnsnap
         bool playingPath = false;
         int currentRecordingIndex = 0;
         GameObject gameCamera;
+        Vector2 smoothedMouseDelta;
+        Vector2 currentMouseDelta;
         Vector3 MemoryPos;
         List<Detour> Detours = new List<Detour>();
         List<Vector3> MemoryPosList = new List<Vector3>();
@@ -178,8 +179,7 @@ namespace CamUnsnap
                 mCamUnsnapped = value;
             }
         }
-        private Vector2 smoothedMouseDelta;
-        private Vector2 currentMouseDelta;
+        
         void Update()
         {
             if (Input.GetKeyDown(Plugin.ToggleCameraSnap.Value.MainKey)) 
