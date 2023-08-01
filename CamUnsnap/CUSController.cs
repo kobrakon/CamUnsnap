@@ -77,9 +77,9 @@ namespace CamUnsnap
         bool playingPath = false;
         int currentRecordingIndex = 0;
         GameObject gameCamera;
+        Vector3 MemoryPos;
         Vector2 smoothedMouseDelta;
         Vector2 currentMouseDelta;
-        Vector3 MemoryPos;
         List<Detour> Detours = new List<Detour>();
         List<Vector3> MemoryPosList = new List<Vector3>();
         TransformRecording PathRecording;
@@ -89,7 +89,7 @@ namespace CamUnsnap
         bool CamViewInControl { get; set; } = false;
 
         Player player
-        { get => gameWorld.AllPlayers[0]; }
+        { get => gameWorld.MainPlayer; }
 
         GameWorld gameWorld
         { get => Singleton<GameWorld>.Instance; }
@@ -134,7 +134,7 @@ namespace CamUnsnap
 
         bool playerAirborne
         {
-            get => !player.CharacterControllerCommon.isGrounded;
+            get => !player.CharacterController.isGrounded;
         }
 
         bool CamUnsnapped
@@ -179,7 +179,7 @@ namespace CamUnsnap
                 mCamUnsnapped = value;
             }
         }
-        
+
         void Update()
         {
             if (Input.GetKeyDown(Plugin.ToggleCameraSnap.Value.MainKey)) 
@@ -255,10 +255,7 @@ namespace CamUnsnap
                             {
                                 Recording = true;
                                 SendNotificaiton("Recording Resumed", false);
-                            } else
-                            {
-                                SendNotificaiton($"Cannot resume recording\nNo previous recording exists, press '{Plugin.BeginRecord.Value}' to start a new one");
-                            }
+                            } else SendNotificaiton($"Cannot resume recording\nNo previous recording exists, press '{Plugin.BeginRecord.Value}' to start a new one");
                         }
 
                         if (Input.GetKeyDown(Plugin.StopRecord.Value.MainKey))
@@ -267,7 +264,7 @@ namespace CamUnsnap
                             SendNotificaiton("Recording Stopped", false);
                         }
 
-                        player.ActiveHealthController.SetDamageCoeff(Plugin.ImmuneInCamera.Value ? 0f : player.ActiveHealthController.DamageCoeff != 1f && !playerAirborne ? 1f : 0f);
+                        player.ActiveHealthController.SetDamageCoeff(Plugin.ImmuneInCamera.Value ? 0 : player.ActiveHealthController.DamageCoeff != 1 && !playerAirborne ? 1 : 0);
 
                         if (Input.GetKeyDown(Plugin.RememberPos.Value.MainKey)) 
                             MemoryPos = gameCamera.transform.position;
@@ -345,7 +342,6 @@ namespace CamUnsnap
 
                     if (CamViewInControl)
                     {
-
                         currentMouseDelta.x = Input.GetAxis("Mouse X") * CameraSensitivity;
                         currentMouseDelta.y = Input.GetAxis("Mouse Y") * CameraSensitivity;
 
@@ -376,7 +372,7 @@ namespace CamUnsnap
         async void MovePlayer()
         {
             player.Transform.position = gameCamera.transform.position;
-            player.ActiveHealthController.SetDamageCoeff(1);
+            player.ActiveHealthController.SetDamageCoeff(0);
             while (playerAirborne)
             {
                 await Task.Yield();
@@ -388,6 +384,6 @@ namespace CamUnsnap
 
         public static void BlankOverride() {} // override so player doesn't move
 
-        bool Ready() => gameWorld != null && gameWorld.AllPlayers != null && gameWorld.AllPlayers.Count > 0;
+        bool Ready() => gameWorld != null && gameWorld.MainPlayer != null && gameWorld.AllAlivePlayersList.Count > 0;
     }
 }
